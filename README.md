@@ -13,6 +13,8 @@ go install github.com/tmc/ent2d2@latest
 
 ## 🎉 Example 
 
+![example](./testdata/schema.svg)
+
 ## Contributing
 
 We welcome contributions to ent2d2! If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
