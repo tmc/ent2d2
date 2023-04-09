@@ -1,0 +1,111 @@
+
+Card: {
+	shape: sql_table
+	id: int {constraint: primary_key}
+	owner_id: int  {constraint: foreign_key}
+	# this is a comment
+}
+Info: {
+	shape: sql_table
+	id: int {constraint: primary_key}
+	content: json.RawMessage 
+	# this is a comment
+}
+Metadata: {
+	shape: sql_table
+	id: int {constraint: primary_key}
+	age: int 
+	# this is a comment
+}
+Pet: {
+	shape: sql_table
+	id: int {constraint: primary_key}
+	owner_id: int  {constraint: foreign_key}
+	# this is a comment
+}
+Post: {
+	shape: sql_table
+	id: int {constraint: primary_key}
+	text: string 
+	# this is a comment
+	author_id: int  {constraint: foreign_key}
+	# this is a comment
+}
+User: {
+	shape: sql_table
+	id: int {constraint: primary_key}
+	parent_id: int  {constraint: foreign_key}
+	# this is a comment
+	spouse_id: int  {constraint: foreign_key}
+	# this is a comment
+}
+    	User -> User : "spouse" {
+		
+		source-arrowhead: {
+			shape: cf-one
+		}
+		target-arrowhead: {
+			shape: cf-one
+		}
+		
+	}
+    	User -> User : "children/parent" {
+		
+		source-arrowhead: {
+			shape: cf-one-required
+		}
+		target-arrowhead: * {
+			shape: cf-many
+		}
+		
+	}
+    	User -> Pet : "pets/owner" {
+		
+		source-arrowhead: {
+			shape: cf-one-required
+		}
+		target-arrowhead: * {
+			shape: cf-many
+		}
+		
+	}
+    	User -> Card : "card/owner" {
+		
+		source-arrowhead: {
+			shape: cf-one
+		}
+		target-arrowhead: {
+			shape: cf-one
+		}
+		
+	}
+    	User -> Post : "posts/author" {
+		
+		source-arrowhead: {
+			shape: cf-one-required
+		}
+		target-arrowhead: * {
+			shape: cf-many
+		}
+		
+	}
+    	User -> Metadata : "metadata/user" {
+		
+		source-arrowhead: {
+			shape: cf-one-required
+		}
+		target-arrowhead: * {
+			shape: cf-many
+		}
+		
+	}
+    	User -> Info : "info/user" {
+		
+		source-arrowhead: {
+			shape: cf-one-required
+		}
+		target-arrowhead: * {
+			shape: cf-many
+		}
+		
+	}
