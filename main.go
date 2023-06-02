@@ -1,28 +1,70 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"text/template"
 
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
+
+	"oss.terrastruct.com/d2/d2graph"
+	"oss.terrastruct.com/d2/d2layouts/d2elklayout"
+	"oss.terrastruct.com/d2/d2lib"
+	"oss.terrastruct.com/d2/d2renderers/d2svg"
+	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
+	"oss.terrastruct.com/d2/lib/textmeasure"
 )
+
+var flagOutputSvg = flag.String("o", "", "output svg")
 
 func main() {
 	flag.Parse()
 	path := "./ent/schema"
-	if len(os.Args) > 1 {
-		path = os.Args[1]
+	if len(flag.Args()) > 0 {
+		path = flag.Args()[0]
 	}
 	graph, err := entc.LoadGraph(path, &gen.Config{})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if err := tmpl.Execute(os.Stdout, graph); err != nil {
+
+	// capture to bytes buffer
+	buf := new(bytes.Buffer)
+
+	if err := tmpl.Execute(buf, graph); err != nil {
 		log.Fatal(err)
 	}
+
+	if *flagOutputSvg == "" {
+		fmt.Println(buf.String())
+	} else {
+		if err := renderSvg(buf.String(), *flagOutputSvg); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+}
+
+func renderSvg(contents string, outFilePath string) error {
+	ruler, _ := textmeasure.NewRuler()
+	defaultLayout := func(ctx context.Context, g *d2graph.Graph) error {
+		return d2elklayout.Layout(ctx, g, nil)
+	}
+	diagram, _, _ := d2lib.Compile(context.Background(), contents, &d2lib.CompileOptions{
+		Layout: defaultLayout,
+		Ruler:  ruler,
+	})
+	out, _ := d2svg.Render(diagram, &d2svg.RenderOpts{
+		Pad:     d2svg.DEFAULT_PADDING,
+		ThemeID: d2themescatalog.GrapeSoda.ID,
+	})
+	return ioutil.WriteFile(outFilePath, out, 0600)
 }
 
 var tmpl = template.Must(template.New("d2-diagram").
