@@ -112,7 +112,7 @@ var tmpl = template.Must(template.New("d2-diagram").
 			shape: cf-many
 		}
 		target-arrowhead: {
-			shape: {{ if $e.Required }}cf-many-required{{ else }}cf-many{{ end }}
+			shape: {{ if $e.Optional }}cf-many{{ else }}cf-many-required{{ end }}
 		}
 		{{ end }}
 	}
