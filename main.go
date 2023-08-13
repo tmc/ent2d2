@@ -19,6 +19,7 @@ import (
 	"oss.terrastruct.com/d2/d2renderers/d2svg"
 	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
 	"oss.terrastruct.com/d2/lib/textmeasure"
+	"oss.terrastruct.com/util-go/go2"
 )
 
 var flagOutputSvg = flag.String("o", "", "output svg")
@@ -53,16 +54,15 @@ func main() {
 
 func renderSvg(contents string, outFilePath string) error {
 	ruler, _ := textmeasure.NewRuler()
-	defaultLayout := func(ctx context.Context, g *d2graph.Graph) error {
-		return d2elklayout.Layout(ctx, g, nil)
+	defaultLayout := func(engine string) (d2graph.LayoutGraph, error) {
+		return d2elklayout.DefaultLayout, nil
 	}
 	diagram, _, _ := d2lib.Compile(context.Background(), contents, &d2lib.CompileOptions{
-		Layout: defaultLayout,
-		Ruler:  ruler,
-	})
+		LayoutResolver: defaultLayout,
+		Ruler:          ruler,
+	}, &d2svg.RenderOpts{})
 	out, _ := d2svg.Render(diagram, &d2svg.RenderOpts{
-		Pad:     d2svg.DEFAULT_PADDING,
-		ThemeID: d2themescatalog.GrapeSoda.ID,
+		ThemeID: go2.Pointer(d2themescatalog.GrapeSoda.ID),
 	})
 	return ioutil.WriteFile(outFilePath, out, 0600)
 }
