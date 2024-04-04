@@ -12,11 +12,14 @@ import (
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 
+	"cdr.dev/slog"
+	"cdr.dev/slog/sloggers/sloghuman"
 	"oss.terrastruct.com/d2/d2graph"
 	"oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	"oss.terrastruct.com/d2/d2lib"
 	"oss.terrastruct.com/d2/d2renderers/d2svg"
 	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
+	"oss.terrastruct.com/d2/lib/log"
 	"oss.terrastruct.com/d2/lib/textmeasure"
 )
 
@@ -64,11 +67,12 @@ func ref[T any](v T) *T {
 }
 
 func renderSvg(contents string, outFilePath string) error {
+	ctx := log.With(context.Background(), slog.Make(sloghuman.Sink(os.Stderr)))
 	ruler, _ := textmeasure.NewRuler()
 	defaultLayout := func(engine string) (d2graph.LayoutGraph, error) {
 		return d2elklayout.DefaultLayout, nil
 	}
-	diagram, _, err := d2lib.Compile(context.Background(), contents, &d2lib.CompileOptions{
+	diagram, _, err := d2lib.Compile(ctx, contents, &d2lib.CompileOptions{
 		LayoutResolver: defaultLayout,
 		Ruler:          ruler,
 	}, &d2svg.RenderOpts{})
