@@ -5,9 +5,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
+	"strings"
 	"text/template"
 
 	"entgo.io/ent/entc"
@@ -19,10 +18,12 @@ import (
 	"oss.terrastruct.com/d2/d2renderers/d2svg"
 	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
 	"oss.terrastruct.com/d2/lib/textmeasure"
-	"oss.terrastruct.com/util-go/go2"
 )
 
-var flagOutputSvg = flag.String("o", "", "output svg")
+var (
+	flagOutputSvg = flag.String("o", "", "output svg")
+	flagOutputD2  = flag.String("d2", "", "output d2")
+)
 
 func main() {
 	flag.Parse()
@@ -30,18 +31,23 @@ func main() {
 	if len(flag.Args()) > 0 {
 		path = flag.Args()[0]
 	}
+	if err := run(path); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+}
+
+func run(path string) error {
 	graph, err := entc.LoadGraph(path, &gen.Config{})
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
-
 	// capture to bytes buffer
 	buf := new(bytes.Buffer)
-
 	if err := tmpl.Execute(buf, graph); err != nil {
-		log.Fatal(err)
+		return err
 	}
-
 	if *flagOutputSvg == "" {
 		fmt.Println(buf.String())
 	} else {
@@ -50,6 +56,11 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	return nil
+}
+
+func ref[T any](v T) *T {
+	return &v
 }
 
 func renderSvg(contents string, outFilePath string) error {
@@ -57,19 +68,29 @@ func renderSvg(contents string, outFilePath string) error {
 	defaultLayout := func(engine string) (d2graph.LayoutGraph, error) {
 		return d2elklayout.DefaultLayout, nil
 	}
-	diagram, _, _ := d2lib.Compile(context.Background(), contents, &d2lib.CompileOptions{
+	diagram, _, err := d2lib.Compile(context.Background(), contents, &d2lib.CompileOptions{
 		LayoutResolver: defaultLayout,
 		Ruler:          ruler,
 	}, &d2svg.RenderOpts{})
-	out, _ := d2svg.Render(diagram, &d2svg.RenderOpts{
-		ThemeID: go2.Pointer(d2themescatalog.GrapeSoda.ID),
+	if err != nil {
+		return err
+	}
+	out, err := d2svg.Render(diagram, &d2svg.RenderOpts{
+		ThemeID: ref(d2themescatalog.GrapeSoda.ID),
 	})
-	return ioutil.WriteFile(outFilePath, out, 0600)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(outFilePath, out, 0600)
 }
 
 var tmpl = template.Must(template.New("d2-diagram").
 	Funcs(template.FuncMap{
 		"fmtType": func(s string) string {
+			// if has [ then put in single quotes:
+			if strings.Contains(s, "[") {
+				return "'" + s + "'"
+			}
 			return s
 		},
 	}).
